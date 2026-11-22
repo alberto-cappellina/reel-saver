@@ -1,0 +1,9 @@
+# Aruba / Apache — fa scaricare correttamente l'APK
+AddType application/vnd.android.package-archive .apk
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.apk$">
+    Header set Content-Disposition "attachment; filename=reel-saver.apk"
+    Header set Cache-Control "public, max-age=3600"
+  </FilesMatch>
+</IfModule>
