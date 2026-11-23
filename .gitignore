@@ -47,12 +47,12 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# Firma release — NON versionare mai keystore e password
+# Release signing — NEVER commit keystores or passwords
 *.jks
 *.keystore
 **/key.properties
 
-# Config di deploy locale (host, update URL, credenziali) — NON versionare
+# Local deploy config (host, update URL, credentials) — do NOT commit
 .deploy.env
 
 # Artefatti di build/deploy generati (distribuire via GitHub Releases)

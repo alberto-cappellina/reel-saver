@@ -1,4 +1,4 @@
-# Aruba / Apache — fa scaricare correttamente l'APK
+# Apache — serve the APK as a proper download
 AddType application/vnd.android.package-archive .apk
 
 <IfModule mod_headers.c>
