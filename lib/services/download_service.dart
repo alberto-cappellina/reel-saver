@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'app_log.dart';
 
-/// Esito del download: file locale (per la condivisione) + flag salvataggio.
+/// Download outcome: local file (for sharing) + saved-to-gallery flag.
 class DownloadResult {
   DownloadResult({required this.filePath, required this.savedToGallery});
   final String filePath;
@@ -20,7 +20,7 @@ class DownloadException implements Exception {
   String toString() => message;
 }
 
-/// Scarica il video sul dispositivo e lo salva nella galleria.
+/// Downloads the video to the device and saves it to the gallery.
 class DownloadService {
   DownloadService({Dio? dio}) : _dio = dio ?? Dio();
 
@@ -28,8 +28,8 @@ class DownloadService {
 
   static const String _albumName = 'Reel Saver';
 
-  /// Scarica [videoUrl] mostrando l'avanzamento, salva in galleria e
-  /// restituisce il percorso locale (utile per la condivisione).
+  /// Downloads [videoUrl] reporting progress, saves it to the gallery and
+  /// returns the local path (useful for sharing).
   Future<DownloadResult> downloadAndSave({
     required String videoUrl,
     required String shortcode,
@@ -41,7 +41,7 @@ class DownloadService {
     final filePath = '${dir.path}/$fileName';
 
     final host = Uri.tryParse(videoUrl)?.host ?? '?';
-    AppLog.add('Download: avvio da host $host');
+    AppLog.add('Download: starting from host $host');
     try {
       await _dio.download(
         videoUrl,
@@ -61,17 +61,17 @@ class DownloadService {
         ),
       );
     } on DioException catch (e) {
-      AppLog.add('Download: ERRORE ${e.type.name} '
+      AppLog.add('Download: ERROR ${e.type.name} '
           '${e.response?.statusCode ?? ""} ${e.message ?? ""}');
       throw DownloadException('Errore durante il download: ${e.message}');
     }
 
     final file = File(filePath);
     if (!await file.exists() || await file.length() == 0) {
-      AppLog.add('Download: file vuoto');
+      AppLog.add('Download: empty file');
       throw DownloadException('Il file scaricato è vuoto.');
     }
-    AppLog.add('Download: ok, ${await file.length()} byte');
+    AppLog.add('Download: ok, ${await file.length()} bytes');
 
     bool saved = false;
     try {
@@ -81,11 +81,11 @@ class DownloadService {
       }
       await Gal.putVideo(filePath, album: _albumName);
       saved = true;
-      AppLog.add('Galleria: salvato in album "$_albumName"');
+      AppLog.add('Gallery: saved to album "$_albumName"');
     } on GalException catch (e) {
-      // Il video è comunque scaricato e condivisibile: non blocchiamo tutto.
+      // The video is downloaded and shareable anyway: don't block everything.
       saved = false;
-      AppLog.add('Galleria: ERRORE ${e.type.message}');
+      AppLog.add('Gallery: ERROR ${e.type.message}');
     }
 
     return DownloadResult(filePath: filePath, savedToGallery: saved);

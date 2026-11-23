@@ -6,7 +6,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
 import 'app_log.dart';
 
-/// Risultato della risoluzione di un contenuto Instagram.
+/// Result of resolving an Instagram item.
 class ResolvedMedia {
   ResolvedMedia({
     required this.videoUrl,
@@ -26,19 +26,19 @@ class ResolveException implements Exception {
   String toString() => message;
 }
 
-/// Risolve un URL pubblico di Instagram (reel/post) nel link diretto al video,
-/// interamente lato client (nessun backend).
+/// Resolves a public Instagram URL (reel/post) to the direct video link,
+/// entirely client-side (no backend).
 ///
-/// Metodo (replica dell'estrattore sloggato di yt-dlp):
-///   1. GET https://www.instagram.com/  -> stabilisce la sessione (cookie).
-///   2. GET https://www.instagram.com/p/{shortcode}/ con header "da browser"
-///      (in particolare `Sec-Fetch-Mode: navigate`): la pagina incorpora i dati
-///      del media nei blocchi `data-sjs`, da cui si estraggono le
-///      `video_versions` (file .mp4 progressivo H.264 + audio).
-///   3. Fallback: endpoint GraphQL e `api/v1/media/{pk}/info/`.
+/// Method (replica of yt-dlp's logged-out extractor):
+///   1. GET https://www.instagram.com/  -> establishes the session (cookies).
+///   2. GET https://www.instagram.com/p/{shortcode}/ with browser-like headers
+///      (notably `Sec-Fetch-Mode: navigate`): the page embeds the media data in
+///      `data-sjs` blocks, from which the `video_versions` are extracted
+///      (a progressive .mp4 file, H.264 + audio).
+///   3. Fallback: the GraphQL endpoint and `api/v1/media/{pk}/info/`.
 ///
-/// Nota: Instagram può cambiare in qualsiasi momento; per questo ci sono più
-/// strategie e un log diagnostico esportabile ([AppLog]).
+/// Note: Instagram can change at any time; hence multiple strategies and an
+/// exportable diagnostic log ([AppLog]).
 class InstagramResolver {
   InstagramResolver() {
     _dio = Dio(BaseOptions(
@@ -66,8 +66,8 @@ class InstagramResolver {
   static final RegExp _sjsRe =
       RegExp(r'<script\b[^>]+\bdata-sjs>(\{.+?\})</script>', dotAll: true);
 
-  // Header "da browser" — Sec-Fetch-Mode: navigate è decisivo: senza, Instagram
-  // serve solo il guscio della pagina senza i dati del media.
+  // Browser-like headers — Sec-Fetch-Mode: navigate is decisive: without it,
+  // Instagram serves only the page shell with no media data.
   Map<String, String> get _browserHeaders => {
         'User-Agent': _ua,
         'Accept':
@@ -86,18 +86,18 @@ class InstagramResolver {
         'Sec-Fetch-Mode': 'navigate',
       };
 
-  /// Punto d'ingresso principale.
+  /// Main entry point.
   Future<ResolvedMedia> resolve(String rawUrl) async {
-    AppLog.section('Risoluzione Instagram');
+    AppLog.section('Instagram resolution');
     final url = _firstInstagramUrl(rawUrl);
-    AppLog.add('Input: "${_short(rawUrl)}" -> url: ${url ?? "NESSUNO"}');
+    AppLog.add('Input: "${_short(rawUrl)}" -> url: ${url ?? "NONE"}');
     if (url == null) {
       throw ResolveException(
           'Non ho trovato un link di Instagram nel testo condiviso.');
     }
 
     final shortcode = await _extractShortcode(url);
-    AppLog.add('shortcode: ${shortcode ?? "NON TROVATO"}');
+    AppLog.add('shortcode: ${shortcode ?? "NOT FOUND"}');
     if (shortcode == null) {
       throw ResolveException(
           'Non riesco a identificare il reel/post da questo link.');
@@ -107,7 +107,7 @@ class InstagramResolver {
 
     await _setupSession();
 
-    // 1) Pagina del post (metodo principale, verificato).
+    // 1) Post page (primary, verified method).
     final fromPage = await _tryPostPage(shortcode);
     if (fromPage != null) return fromPage;
 
@@ -115,11 +115,11 @@ class InstagramResolver {
     final fromGraphql = await _tryGraphql(pk, shortcode, url);
     if (fromGraphql != null) return fromGraphql;
 
-    // 3) Endpoint media info.
+    // 3) media info endpoint.
     final fromInfo = await _tryMediaInfo(pk, shortcode);
     if (fromInfo != null) return fromInfo;
 
-    AppLog.add('ESITO: nessuna strategia ha trovato il video.');
+    AppLog.add('RESULT: no strategy found the video.');
     throw ResolveException(
       'Impossibile estrarre il video. Il contenuto potrebbe essere privato, '
       'rimosso, oppure Instagram ha cambiato le sue pagine. Usa "Esporta log" '
@@ -127,7 +127,7 @@ class InstagramResolver {
     );
   }
 
-  // --- Sessione -------------------------------------------------------------
+  // --- Session --------------------------------------------------------------
 
   Future<void> _setupSession() async {
     try {
@@ -142,11 +142,11 @@ class InstagramResolver {
           ) ??
           _firstGroup(RegExp(r'"l":"([^"]+)"').firstMatch(html));
       final csrf = await _csrfToken();
-      AppLog.add('Sessione: status ${resp.statusCode}, '
-          'csrftoken ${csrf != null ? "ok" : "assente"}, '
-          'lsd ${_lsdToken != null ? "ok" : "assente"}');
+      AppLog.add('Session: status ${resp.statusCode}, '
+          'csrftoken ${csrf != null ? "ok" : "missing"}, '
+          'lsd ${_lsdToken != null ? "ok" : "missing"}');
     } catch (e) {
-      AppLog.add('Sessione: ERRORE ${_err(e)}');
+      AppLog.add('Session: ERROR ${_err(e)}');
     }
   }
 
@@ -159,7 +159,7 @@ class InstagramResolver {
     return null;
   }
 
-  // --- Strategie ------------------------------------------------------------
+  // --- Strategies -----------------------------------------------------------
 
   Future<ResolvedMedia?> _tryPostPage(String shortcode) async {
     final urlStr = 'https://www.instagram.com/p/$shortcode/';
@@ -183,22 +183,22 @@ class InstagramResolver {
         } catch (_) {}
       }
       final best = _best(cands);
-      AppLog.add('Pagina /p/: status ${resp.statusCode}, '
-          '${html.length} byte, $blocks blocchi data-sjs, '
-          '${cands.length} candidati video -> ${best != null ? "TROVATO" : "niente"}');
+      AppLog.add('Post page: status ${resp.statusCode}, '
+          '${html.length} bytes, $blocks data-sjs blocks, '
+          '${cands.length} video candidates -> ${best != null ? "FOUND" : "none"}');
       if (best != null) {
         return ResolvedMedia(
             videoUrl: best, shortcode: shortcode, thumbnailUrl: thumb);
       }
-      // Ultima spiaggia: og:video nel markup.
+      // Last resort: og:video in the markup.
       final og = _firstGroup(
           RegExp(r'property="og:video"\s+content="([^"]+)"').firstMatch(html));
       if (og != null && og.startsWith('http')) {
-        AppLog.add('Pagina /p/: trovato og:video');
+        AppLog.add('Post page: found og:video');
         return ResolvedMedia(videoUrl: og, shortcode: shortcode);
       }
     } catch (e) {
-      AppLog.add('Pagina /p/: ERRORE ${_err(e)}');
+      AppLog.add('Post page: ERROR ${_err(e)}');
     }
     return null;
   }
@@ -234,10 +234,10 @@ class InstagramResolver {
       );
       final media = _buildFromJson(_asJson(resp.data), shortcode);
       AppLog.add('GraphQL: status ${resp.statusCode} -> '
-          '${media != null ? "TROVATO" : "niente"}');
+          '${media != null ? "FOUND" : "none"}');
       return media;
     } catch (e) {
-      AppLog.add('GraphQL: ERRORE ${_err(e)}');
+      AppLog.add('GraphQL: ERROR ${_err(e)}');
       return null;
     }
   }
@@ -250,10 +250,10 @@ class InstagramResolver {
       );
       final media = _buildFromJson(_asJson(resp.data), shortcode);
       AppLog.add('media/info: status ${resp.statusCode} -> '
-          '${media != null ? "TROVATO" : "niente"}');
+          '${media != null ? "FOUND" : "none"}');
       return media;
     } catch (e) {
-      AppLog.add('media/info: ERRORE ${_err(e)}');
+      AppLog.add('media/info: ERROR ${_err(e)}');
       return null;
     }
   }
@@ -271,7 +271,7 @@ class InstagramResolver {
     );
   }
 
-  // --- Parsing ricorsivo ----------------------------------------------------
+  // --- Recursive parsing ----------------------------------------------------
 
   void _collect(dynamic node, List<_Cand> out) {
     if (node is Map) {
@@ -330,7 +330,7 @@ class InstagramResolver {
     return null;
   }
 
-  // --- Utilità --------------------------------------------------------------
+  // --- Utilities ------------------------------------------------------------
 
   String? _firstGroup(RegExpMatch? m) => m?.group(1);
 
@@ -364,11 +364,12 @@ class InstagramResolver {
       final m2 = _shortcodeRe.firstMatch(resp.data ?? '');
       if (m2 != null) return m2.group(1);
     } catch (e) {
-      AppLog.add('Redirect shortcode: ERRORE ${_err(e)}');
+      AppLog.add('Redirect shortcode: ERROR ${_err(e)}');
     }
     return null;
   }
 
+  /// shortcode -> media pk (integer) using Instagram's algorithm.
   String _shortcodeToPk(String shortcode) {
     var code = shortcode;
     if (code.length > 28) code = code.substring(0, code.length - 28);

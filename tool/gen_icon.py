@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Genera gli asset dell'icona di Reel Saver.
+"""Generate the Reel Saver icon assets.
 
 Output in assets/icon/:
-  - icon.png     icona completa (gradiente arrotondato + simbolo)  [legacy]
-  - icon_bg.png  sfondo gradiente pieno                            [adaptive bg]
-  - icon_fg.png  solo simbolo, trasparente, centrato nella safe-zone [adaptive fg]
+  - icon.png     full icon (rounded gradient + symbol)            [legacy]
+  - icon_bg.png  solid gradient background                        [adaptive bg]
+  - icon_fg.png  symbol only, transparent, centered in safe-zone  [adaptive fg]
 
-Uso: python3 tool/gen_icon.py
+Usage: python3 tool/gen_icon.py
 """
 import os
 from PIL import Image, ImageDraw
@@ -15,7 +15,7 @@ S = 1024
 OUT = os.path.join(os.path.dirname(__file__), "..", "assets", "icon")
 os.makedirs(OUT, exist_ok=True)
 
-# Gradiente diagonale stile Instagram (caldo -> magenta -> viola/blu)
+# Instagram-style diagonal gradient (warm -> magenta -> purple/blue)
 STOPS = [(0.0, (254, 218, 119)), (0.5, (214, 41, 118)), (1.0, (79, 91, 213))]
 
 
@@ -50,12 +50,12 @@ def rounded_mask(size, radius):
 
 
 def draw_symbol(draw, size, scale=1.0, cx=None, cy=None):
-    """Disegna play + freccia download in bianco."""
+    """Draw a play symbol + download arrow in white."""
     cx = size / 2 if cx is None else cx
     cy = size / 2 if cy is None else cy
     white = (255, 255, 255, 255)
 
-    # Play triangle (puntato a destra), leggermente in alto
+    # Play triangle (pointing right), slightly above center
     r = size * 0.19 * scale
     pcy = cy - size * 0.05 * scale
     tri = [
@@ -65,15 +65,15 @@ def draw_symbol(draw, size, scale=1.0, cx=None, cy=None):
     ]
     draw.polygon(tri, fill=white)
 
-    # Freccia download sotto
-    aw = size * 0.11 * scale          # mezza larghezza testa
+    # Download arrow below
+    aw = size * 0.11 * scale          # half width of the arrow head
     stem_w = size * 0.045 * scale
     top = cy + size * 0.10 * scale
     tip = cy + size * 0.27 * scale
     head_top = tip - aw * 1.15
-    # stelo
+    # stem
     draw.rectangle([cx - stem_w, top, cx + stem_w, head_top + aw * 0.2], fill=white)
-    # testa
+    # head
     draw.polygon([(cx - aw, head_top), (cx + aw, head_top), (cx, tip)], fill=white)
     # base (tray)
     by = tip + size * 0.045 * scale
@@ -83,11 +83,11 @@ def draw_symbol(draw, size, scale=1.0, cx=None, cy=None):
 
 
 def main():
-    # --- sfondo gradiente pieno (adaptive background) ---
+    # --- solid gradient background (adaptive background) ---
     bg = gradient(S).convert("RGBA")
     bg.save(os.path.join(OUT, "icon_bg.png"))
 
-    # --- icona completa, arrotondata (legacy) ---
+    # --- full, rounded icon (legacy) ---
     full = gradient(S).convert("RGBA")
     d = ImageDraw.Draw(full)
     draw_symbol(d, S, scale=1.0)
@@ -96,7 +96,7 @@ def main():
     rounded.paste(full, (0, 0), mask)
     rounded.save(os.path.join(OUT, "icon.png"))
 
-    # --- foreground adaptive: solo simbolo nella safe-zone (~62%) ---
+    # --- adaptive foreground: symbol only, inside the safe-zone (~62%) ---
     fg = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     df = ImageDraw.Draw(fg)
     draw_symbol(df, S, scale=0.62)

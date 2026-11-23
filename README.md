@@ -1,99 +1,99 @@
 <div align="center">
   <img src="assets/icon/icon.png" width="96" alt="Reel Saver" />
   <h1>Reel Saver</h1>
-  <p>App Android (Flutter) per scaricare reel/post <b>pubblici</b> di Instagram,
-  salvarli in galleria e ricondividerli su Telegram / WhatsApp.</p>
+  <p>Android app (Flutter) to download <b>public</b> Instagram reels/posts,
+  save them to the gallery and re-share them on Telegram / WhatsApp.</p>
 </div>
 
 ---
 
 > [!WARNING]
-> **Uso personale ed educativo.** Instagram non offre un'API ufficiale di
-> download e questo progetto non è affiliato né approvato da Instagram/Meta.
-> Scarica **solo** contenuti pubblici e **solo** se hai il diritto di salvarli,
-> nel rispetto del copyright degli autori e dei
-> [Termini di Instagram](https://help.instagram.com/581066165581870). Scaricare
-> contenuti altrui può violare tali termini: la responsabilità dell'uso è di chi
-> utilizza l'app.
+> **Personal and educational use.** Instagram offers no official download API and
+> this project is not affiliated with or endorsed by Instagram/Meta. Download
+> **only** public content and **only** if you have the right to save it,
+> respecting the authors' copyright and the
+> [Instagram Terms](https://help.instagram.com/581066165581870). Downloading
+> other people's content may violate those terms: responsibility for any use lies
+> with whoever uses the app.
 
-## Funzionalità
+## Features
 
-- Compare nel menu **Condividi** di Instagram (share intent `text/*`).
-- Riceve l'URL del reel/post (oppure lo incolli a mano).
-- **Scarica il video** come file `.mp4` unico (H.264 + audio), pronto da condividere.
-- Lo **salva in galleria** (album *Reel Saver*).
-- Lo **ricondivide** su Telegram, WhatsApp, ecc. con un tap.
-- **Auto-update opzionale**: se configurata con un *update URL*, all'avvio
-  verifica se c'è una versione più recente e la propone in un bottomsheet.
-- **Log diagnostico esportabile** (icona 🐞) per capire eventuali errori.
+- Appears in Instagram's **Share** menu (share intent `text/*`).
+- Receives the reel/post URL (or you paste it manually).
+- **Downloads the video** as a single `.mp4` file (H.264 + audio), ready to share.
+- **Saves it to the gallery** (album *Reel Saver*).
+- **Re-shares it** to Telegram, WhatsApp, etc. with one tap.
+- **Optional auto-update**: if configured with an *update URL*, on launch it
+  checks for a newer version and offers it in a bottom sheet.
+- **Exportable diagnostic log** (🐞 icon) to understand any errors.
 
-## Come funziona (architettura)
+## How it works (architecture)
 
-Tutto **lato client, senza backend**:
+Everything runs **client-side, with no backend**:
 
 - [`lib/services/instagram_resolver.dart`](lib/services/instagram_resolver.dart)
-  — da un URL Instagram ricava il link diretto al video. Stabilisce una sessione
-  (cookie) e scarica la pagina `/p/{shortcode}/` con header da browser
-  (`Sec-Fetch-Mode: navigate`), poi estrae le `video_versions` dai blocchi
-  `data-sjs`. Fallback: endpoint GraphQL e `api/v1/media/{id}/info/`.
+  — turns an Instagram URL into the direct video link. It establishes a session
+  (cookies) and fetches the `/p/{shortcode}/` page with browser-like headers
+  (`Sec-Fetch-Mode: navigate`), then extracts `video_versions` from the
+  `data-sjs` blocks. Fallbacks: the GraphQL endpoint and `api/v1/media/{id}/info/`.
 - [`lib/services/download_service.dart`](lib/services/download_service.dart) —
-  download con avanzamento (`dio`) + salvataggio in galleria (`gal`).
+  download with progress (`dio`) + save to gallery (`gal`).
 - [`lib/services/update_service.dart`](lib/services/update_service.dart) —
-  auto-update via un `version.json` remoto (attivo solo se `UPDATE_URL` è
-  impostato a build-time).
-- [`lib/main.dart`](lib/main.dart) — UI, ricezione share (`receive_sharing_intent`),
-  condivisione (`share_plus`).
+  auto-update via a remote `version.json` (active only if `UPDATE_URL` is set at
+  build time).
+- [`lib/main.dart`](lib/main.dart) — UI, share receiving
+  (`receive_sharing_intent`), re-sharing (`share_plus`).
 
 > [!NOTE]
-> La risoluzione dipende dalla struttura delle pagine pubbliche di Instagram, che
-> **può cambiare**: se un giorno smette di funzionare va aggiornata la logica in
-> `instagram_resolver.dart`. Un buon riferimento per ricavare il metodo corrente
-> è il traffico di [`yt-dlp`](https://github.com/yt-dlp/yt-dlp)
-> (`yt-dlp -v --print-traffic <url>`). Funziona **solo con contenuti pubblici**.
+> Resolution depends on the structure of Instagram's public pages, which **can
+> change**: if it stops working one day, the logic in `instagram_resolver.dart`
+> must be updated. A good reference to derive the current method is the traffic of
+> [`yt-dlp`](https://github.com/yt-dlp/yt-dlp)
+> (`yt-dlp -v --print-traffic <url>`). Works **with public content only**.
 
-## Requisiti
+## Requirements
 
 - Android **7.0+** (API 24)
-- Per gli sviluppatori: Flutter, Android SDK, Java 17
+- For developers: Flutter, Android SDK, Java 17
 
-## Sviluppo
+## Development
 
 ```bash
 flutter pub get
-flutter run            # su dispositivo/emulatore Android
+flutter run            # on an Android device/emulator
 flutter analyze
 flutter test
 ```
 
-Generare le icone (da `assets/icon/`):
+Regenerate the icons (from `assets/icon/`):
 
 ```bash
-python3 tool/gen_icon.py          # rigenera i PNG sorgente
-dart run flutter_launcher_icons   # genera i mipmap Android
+python3 tool/gen_icon.py          # regenerate the source PNGs
+dart run flutter_launcher_icons   # generate the Android mipmaps
 ```
 
 ## Build
 
 ```bash
-# Senza auto-update
+# Without auto-update
 flutter build apk --release
 
-# Con auto-update (verso il tuo version.json)
-flutter build apk --release --dart-define=UPDATE_URL="https://tuo-host/app/version.json"
+# With auto-update (pointing at your version.json)
+flutter build apk --release --dart-define=UPDATE_URL="https://your-host/app/version.json"
 ```
 
-## Distribuzione / deploy
+## Distribution / deploy
 
-L'app si installa via **sideload** (APK), non dal Play Store. Puoi pubblicare
-l'APK dove preferisci (GitHub Releases, un hosting statico, ecc.). La cartella
-[`site/`](site/) contiene una pagina di download pronta e un `.htaccess` (Apache)
-che serve l'APK col MIME type corretto.
+The app is installed via **sideload** (APK), not through the Play Store. You can
+publish the APK wherever you like (GitHub Releases, a static host, etc.). The
+[`site/`](site/) folder contains a ready-made download page and an `.htaccess`
+(Apache) that serves the APK with the correct MIME type.
 
-Procedura completa, firma e auto-update: **[DEPLOY.md](DEPLOY.md)**.
-Script build + `version.json` + upload FTP: `./scripts/release.sh --upload`
-(configurazione in `.deploy.env`, vedi `.deploy.env.example`).
+Full procedure, signing and auto-update: **[DEPLOY.md](DEPLOY.md)**.
+Build + `version.json` + FTP upload script: `./scripts/release.sh --upload`
+(configuration in `.deploy.env`, see `.deploy.env.example`).
 
-## Licenza
+## License
 
-Progetto a scopo personale/educativo. Aggiungi la licenza che preferisci (es.
-[MIT](https://opensource.org/licenses/MIT)) creando un file `LICENSE`.
+Personal/educational project. Add the license of your choice (e.g.
+[MIT](https://opensource.org/licenses/MIT)) by creating a `LICENSE` file.

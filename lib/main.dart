@@ -20,7 +20,7 @@ class ReelSaverApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFFD62976); // rosa/magenta stile Instagram
+    const seed = Color(0xFFD62976); // Instagram-style pink/magenta
     return MaterialApp(
       title: 'Reel Saver',
       debugShowCheckedModeBanner: false,
@@ -76,18 +76,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _initShareIntent() {
-    // App già aperta: nuovo contenuto condiviso.
+    // App already open: new shared content.
     _sub = ReceiveSharingIntent.instance.getMediaStream().listen(
       _handleShared,
       onError: (_) {},
     );
 
-    // App lanciata da una condivisione.
+    // App launched from a share.
     ReceiveSharingIntent.instance.getInitialMedia().then((files) {
       _handleShared(files);
       ReceiveSharingIntent.instance.reset();
     }).catchError((_) {
-      // Nessuna condivisione iniziale / canale non disponibile: ignora.
+      // No initial share / channel unavailable: ignore.
     });
   }
 
@@ -132,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _process(String url) async {
     FocusScope.of(context).unfocus();
-    AppLog.section('Nuovo download');
+    AppLog.section('New download');
     setState(() {
       _phase = _Phase.working;
       _message = 'Analizzo il link…';

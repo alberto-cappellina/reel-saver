@@ -1,92 +1,92 @@
 # Deploy — Reel Saver
 
-Due cose da distribuire:
+Two things to distribute:
 
-1. **l'APK** (l'app Android)
-2. (opzionale) una **pagina HTML** di download + un **`version.json`** per
-   l'auto-update, ospitati su un qualsiasi hosting statico (FTP).
+1. **the APK** (the Android app)
+2. (optional) an **HTML download page** + a **`version.json`** for auto-update,
+   hosted on any static host (FTP).
 
 ---
 
-## 1. Configurazione
+## 1. Configuration
 
-Copia il file di esempio e compilalo con i tuoi valori:
+Copy the example file and fill in your values:
 
 ```bash
 cp .deploy.env.example .deploy.env
 ```
 
-`.deploy.env` è **gitignorato** (non finisce nel repo). Contiene:
+`.deploy.env` is **gitignored** (it does not go into the repo). It contains:
 
-| Variabile | A cosa serve |
+| Variable | Purpose |
 |---|---|
-| `UPDATE_URL` | URL del `version.json` per l'auto-update. **Vuoto = auto-update disattivato.** |
-| `APK_URL` | URL pubblico diretto all'APK (scritto dentro `version.json`). |
-| `ARUBA_FTP_HOST` / `ARUBA_FTP_DIR` / `ARUBA_FTP_USER` | FTP del tuo hosting. |
+| `UPDATE_URL` | URL of the `version.json` used for auto-update. **Empty = auto-update disabled.** |
+| `APK_URL` | Public direct URL to the APK (written inside `version.json`). |
+| `ARUBA_FTP_HOST` / `ARUBA_FTP_DIR` / `ARUBA_FTP_USER` | Your hosting's FTP. |
 
-La **password FTP** non va nel file: si passa a runtime (`ARUBA_FTP_PASS=...`).
+The **FTP password** does not go in the file: pass it at runtime (`ARUBA_FTP_PASS=...`).
 
 ---
 
-## 2. Build dell'APK
+## 2. Building the APK
 
-Requisiti: Flutter, Android SDK, Java 17.
+Requirements: Flutter, Android SDK, Java 17.
 
-Senza auto-update:
+Without auto-update:
 
 ```bash
 flutter build apk --release
 ```
 
-Con auto-update (l'app controllerà il tuo `version.json` all'avvio):
+With auto-update (the app will check your `version.json` on launch):
 
 ```bash
-flutter build apk --release --dart-define=UPDATE_URL="https://tuo-host/app/version.json"
+flutter build apk --release --dart-define=UPDATE_URL="https://your-host/app/version.json"
 ```
 
-L'APK è in `build/app/outputs/flutter-apk/app-release.apk`.
+The APK is at `build/app/outputs/flutter-apk/app-release.apk`.
 
-> **Firma.** La configurazione di firma sta in `android/key.properties`
-> (gitignorato) + keystore `*.jks` (gitignorato). Se il file manca, la build
-> ripiega automaticamente sulla *debug key*. Per generare un keystore:
+> **Signing.** The signing config lives in `android/key.properties` (gitignored)
+> plus a `*.jks` keystore (gitignored). If the file is missing, the build falls
+> back to the *debug key*. To generate a keystore:
 > ```bash
 > keytool -genkeypair -v -keystore reel-saver-release.jks \
 >   -alias reelsaver -keyalg RSA -keysize 2048 -validity 10000
 > ```
-> poi crea `android/key.properties` con `storePassword`, `keyPassword`,
+> then create `android/key.properties` with `storePassword`, `keyPassword`,
 > `keyAlias=reelsaver`, `storeFile=../../reel-saver-release.jks`.
-> **Mantieni sempre lo stesso keystore**, altrimenti gli aggiornamenti non si
-> installano sopra la versione precedente. Fanne un **backup** (perderlo =
-> niente più aggiornamenti installabili).
+> **Always keep the same keystore**, otherwise updates will not install over the
+> previous version. Make a **backup** of it (losing it = no more installable
+> updates).
 
 ---
 
-## 3. Build + version.json + upload in un comando
+## 3. Build + version.json + upload in one command
 
 ```bash
-ARUBA_FTP_PASS="la-tua-password" ./scripts/release.sh --upload
+ARUBA_FTP_PASS="your-password" ./scripts/release.sh --upload
 ```
 
-Lo script: legge `.deploy.env`, builda (con `UPDATE_URL` se impostato), copia
-l'APK in `site/`, rigenera `site/version.json` dal `pubspec.yaml` (usando
-`APK_URL`) e carica `index.html`, `.htaccess`, `icon.png`, `version.json`,
-`reel-saver.apk` sull'FTP configurato.
+The script reads `.deploy.env`, builds (with `UPDATE_URL` if set), copies the APK
+into `site/`, regenerates `site/version.json` from `pubspec.yaml` (using
+`APK_URL`) and uploads `index.html`, `.htaccess`, `icon.png`, `version.json`,
+`reel-saver.apk` to the configured FTP.
 
-Senza `--upload` fa solo build + `version.json` locale (carichi tu i file di
-`site/`). Le note di rilascio si impostano con `UPDATE_NOTES="• ...\n• ..."`.
+Without `--upload` it only builds + writes `version.json` locally (you upload the
+`site/` files yourself). Set release notes with `UPDATE_NOTES="• ...\n• ..."`.
 
-> Nota hosting: su alcuni provider la cartella servita sul web è una sottocartella
-> (es. `httpdocs/`, `www/`, o una cartella del dominio). Imposta `ARUBA_FTP_DIR`
-> di conseguenza. `.htaccess` (Apache) fa scaricare l'APK col MIME type corretto.
+> Hosting note: on some providers the web-served folder is a subfolder (e.g.
+> `httpdocs/`, `www/`, or a domain folder). Set `ARUBA_FTP_DIR` accordingly.
+> `.htaccess` (Apache) makes the APK download with the correct MIME type.
 
 ---
 
-## 4. Auto-update — come funziona
+## 4. Auto-update — how it works
 
-Se compilata con `UPDATE_URL`, a ogni avvio l'app scarica quel `version.json` e
-confronta il `versionCode` con quello installato. Se il remoto è più alto, mostra
-un **bottomsheet** che scarica e installa il nuovo APK (serve il permesso
-*"Installa app sconosciute"*, richiesto da Android al primo aggiornamento).
+If built with `UPDATE_URL`, on every launch the app downloads that `version.json`
+and compares its `versionCode` with the installed one. If the remote is higher, it
+shows a **bottom sheet** that downloads and installs the new APK (this needs the
+*"Install unknown apps"* permission, which Android requests on the first update).
 
 `version.json`:
 
@@ -94,24 +94,23 @@ un **bottomsheet** che scarica e installa il nuovo APK (serve il permesso
 {
   "versionCode": 3,
   "versionName": "1.2.0",
-  "apkUrl": "https://tuo-host/app/reel-saver.apk",
-  "notes": "• Novità 1\n• Novità 2"
+  "apkUrl": "https://your-host/app/reel-saver.apk",
+  "notes": "• Change 1\n• Change 2"
 }
 ```
 
-Per pubblicare un aggiornamento: alza la versione in `pubspec.yaml`
-(**incrementa sempre il numero dopo il `+`**, è il `versionCode`), poi
-`./scripts/release.sh --upload`. Il `versionCode` del `version.json` non deve
-mai essere più alto dell'APK realmente caricato, altrimenti il bottomsheet si
-ripresenta in loop.
+To publish an update: bump the version in `pubspec.yaml` (**always increment the
+number after the `+`**, which is the `versionCode`), then run
+`./scripts/release.sh --upload`. The `version.json` `versionCode` must never be
+higher than the APK actually uploaded, otherwise the bottom sheet keeps reappearing.
 
 ---
 
-## 5. Verifica
+## 5. Verify
 
-- Apri la pagina dal telefono Android, tocca *Scarica*: deve partire il download
-  dell'APK (se il browser lo apre invece di scaricarlo, controlla che `.htaccess`
-  sia stato caricato — è un file nascosto).
-- Installa e prova: Instagram → Condividi → Reel Saver.
-- Se qualcosa va storto, in app c'è l'icona 🐞 (**Esporta log**) per ottenere il
-  log diagnostico.
+- Open the page from an Android phone and tap *Download*: the APK download must
+  start (if the browser opens it instead of downloading, check that `.htaccess`
+  was uploaded — it is a hidden file).
+- Install and try: Instagram → Share → Reel Saver.
+- If something goes wrong, the app has a 🐞 icon (**Export log**) to obtain the
+  diagnostic log.

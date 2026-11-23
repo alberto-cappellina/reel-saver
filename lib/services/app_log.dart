@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-/// Log diagnostico in-memory, esportabile dall'utente per capire gli errori.
-/// Vi scrivono il resolver, il downloader e l'updater.
+/// In-memory diagnostic log, exportable by the user to understand errors.
+/// Written to by the resolver, the downloader and the updater.
 class AppLog {
   AppLog._();
 
@@ -15,7 +15,7 @@ class AppLog {
     if (kDebugMode) debugPrint('AppLog: $message');
   }
 
-  /// Avvia una nuova sezione (es. un nuovo tentativo di download).
+  /// Starts a new section (e.g. a new download attempt).
   static void section(String title) {
     add('──────── $title ────────');
   }

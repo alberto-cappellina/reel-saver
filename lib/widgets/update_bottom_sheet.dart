@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../services/update_service.dart';
 
-/// Bottomsheet mostrato all'avvio quando è disponibile una nuova versione.
-/// Scarica l'APK con avanzamento e lancia l'installer di sistema.
+/// Bottom sheet shown at launch when a new version is available.
+/// Downloads the APK with progress and launches the system installer.
 class UpdateBottomSheet extends StatefulWidget {
   const UpdateBottomSheet({
     super.key,
@@ -14,7 +14,7 @@ class UpdateBottomSheet extends StatefulWidget {
   final UpdateInfo info;
   final UpdateService service;
 
-  /// Helper per mostrarlo.
+  /// Helper to show it.
   static Future<void> show(
     BuildContext context,
     UpdateInfo info,

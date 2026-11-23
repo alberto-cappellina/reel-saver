@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'app_log.dart';
 
-/// Informazioni sulla versione remota disponibile.
+/// Information about the available remote version.
 class UpdateInfo {
   UpdateInfo({
     required this.versionCode,
@@ -23,30 +23,30 @@ class UpdateInfo {
   final String? notes;
 }
 
-/// Controlla la presenza di aggiornamenti leggendo un piccolo file JSON
-/// pubblicato accanto all'APK, scarica il nuovo APK e lancia l'installer.
+/// Checks for updates by reading a small JSON file published next to the APK,
+/// downloads the new APK and launches the installer.
 class UpdateService {
   UpdateService({Dio? dio}) : _dio = dio ?? Dio();
 
   final Dio _dio;
 
-  /// URL del JSON con i metadati dell'ultima versione pubblicata.
+  /// URL of the JSON holding the metadata of the latest published version.
   ///
-  /// Si configura a build-time:
-  ///   flutter build apk --release --dart-define=UPDATE_URL=https://tuo-host/version.json
+  /// Configured at build time:
+  ///   flutter build apk --release --dart-define=UPDATE_URL=https://your-host/version.json
   ///
-  /// Se non configurato (stringa vuota), l'auto-update è semplicemente
-  /// disattivato: [check] ritorna sempre null.
+  /// If not configured (empty string), auto-update is simply disabled:
+  /// [check] always returns null.
   static const String versionUrl = String.fromEnvironment('UPDATE_URL');
 
-  /// true se l'app è stata compilata con un UPDATE_URL.
+  /// true if the app was built with an UPDATE_URL.
   static bool get isConfigured => versionUrl.isNotEmpty;
 
-  /// Ritorna le info sull'update se la versione remota è più recente, altrimenti
-  /// null. Non lancia mai: in caso di errore (offline, JSON assente) ritorna null.
+  /// Returns update info if the remote version is newer, otherwise null.
+  /// Never throws: on error (offline, missing JSON) it returns null.
   Future<UpdateInfo?> check() async {
     if (!isConfigured) {
-      AppLog.add('Update: nessun UPDATE_URL configurato, controllo saltato');
+      AppLog.add('Update: no UPDATE_URL configured, check skipped');
       return null;
     }
     try {
@@ -81,14 +81,14 @@ class UpdateService {
     }
   }
 
-  /// Scarica l'APK nella cache dell'app e ne restituisce il percorso.
+  /// Downloads the APK into the app cache and returns its path.
   Future<String> downloadApk(
     String url, {
     required void Function(double progress) onProgress,
   }) async {
     final dir = await getTemporaryDirectory();
     final path = '${dir.path}/update.apk';
-    // Rimuove un eventuale download parziale precedente.
+    // Remove any previous partial download.
     final f = File(path);
     if (await f.exists()) await f.delete();
 
@@ -103,7 +103,7 @@ class UpdateService {
     return path;
   }
 
-  /// Apre l'APK scaricato: Android mostra il suo installer di sistema.
+  /// Opens the downloaded APK: Android shows its system installer.
   Future<void> install(String apkPath) async {
     await OpenFilex.open(
       apkPath,

@@ -1,10 +1,10 @@
-// Script di diagnostica: esegue il vero InstagramResolver dell'app su un URL.
-// Uso: dart run tool/try_resolve.dart "<url instagram>"
+// Diagnostic script: runs the app's real InstagramResolver on a URL.
+// Usage: dart run tool/try_resolve.dart "<instagram url>"
 import 'package:ig_saver/services/instagram_resolver.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
-    print('Passa un URL Instagram.');
+    print('Pass an Instagram URL.');
     return;
   }
   final r = InstagramResolver();
@@ -15,7 +15,7 @@ Future<void> main(List<String> args) async {
     print('video_url: ${m.videoUrl}');
     print('thumbnail: ${m.thumbnailUrl}');
   } catch (e) {
-    print('ERRORE: $e');
+    print('ERROR: $e');
   } finally {
     r.dispose();
   }
